@@ -1,0 +1,6 @@
+name = General Formatters
+description = Provides several formatters for general use.
+core = 7.x
+package = Other
+
+files[] = general_formatters.module

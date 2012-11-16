@@ -1,0 +1,502 @@
+<?php
+/**
+ * Implements hook_field_formatter_info().
+ *
+ * Intégration de la définition des formatters pour Soregor.
+ */
+function general_formatters_field_formatter_info() {
+
+  return array(
+    // Formatter permettant d'output un mail en lien mailto:email .
+    'general_formatters_send_email' => array(
+      'label' => t('Send an email'),
+      'field types' => array('text'),
+      'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+      'settings' => array(
+        'display_text' => t('> Send an email')
+      ),
+    ),
+    // Formatter permettant de retourner une map statique Google Maps.
+    'general_formatters_static_map' => array(
+      'label' => t('As static Google Maps'),
+      'field types' => array('geofield'),
+      'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+      'settings' => array(
+        'map_width' => 200,
+        'map_height' => 200,
+        'map_zoom' => 8,
+        'map_type' => 'roadmap',
+        'map_color' => 'orange'
+      ),
+    ),
+    'image_caption' => array(
+      'label' => t('Image with title as caption'),
+      'field types' => array('image'),
+      'settings' => array('image_style' => '', 'image_link' => ''),
+    ),
+    'image_path' => array(
+      'label' => t('Image path'),
+      'field types' => array('image')
+    ),
+    'text_wrapper' => array(
+      'label' => t('Text wrapper'),
+      'field types' => array('text'),
+      'settings' => array('begin' => '', 'end' => '', 'link' => FALSE)
+    ),
+    'general_formatters_string_replacement' => array(
+      'label' => t('String replacement'),
+      'field types' => array('text'),
+      'settings' => array(
+        'prefix_element' => '{',
+        'suffix_element' => '}',
+        'prefix_replacement' => '<strong>',
+        'suffix_replacement' => '</strong>',
+        'element' => ''
+      )
+    ),
+    'general_formatters_advanced_link' => array(
+      'label' => t('Advanced link'),
+      'field types' => array('image', 'text'),
+      'settings' => array(
+        'advanced_image_style' => '',
+        'default_link' => '',
+        'field_link' => ''
+      )
+    )
+  );
+
+} // !general_formatters_field_formatter_info
+
+
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ *
+ * Formulaires de configuration des formatters implémentant éventuellement
+ * des paramètres.
+ */
+function general_formatters_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $element = array();
+  // Texte à afficher pour les liens mailto
+  switch($display['type']) {
+    case 'general_formatters_send_email':
+      $element['display_text'] = array(
+        '#title' => t('Text to display'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['display_text'],
+        '#required' => TRUE,
+      );
+      break;
+    case 'general_formatters_static_map':
+      $element['map_width'] = array(
+        '#title' => t('Map\'s width'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['map_width'],
+        '#required' => TRUE
+      );
+      $element['map_height'] = array(
+        '#title' => t('Map\'s height'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['map_height'],
+        '#required' => TRUE
+      );
+      $element['map_zoom'] = array(
+        '#title' => t('Map\'s zoom'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['map_zoom'],
+        '#required' => TRUE
+      );
+      $element['map_type'] = array(
+        '#title' => t('Map\'s type'),
+        '#type' => 'select',
+        '#options' => array(
+          'roadmap' => t('Roadmap'),
+          'satellite' => t('Satellite'),
+          'terrain' => t('Terrain'),
+          'hybrid' => t('Hybrid')
+        ),
+        '#default_value' => $settings['map_type'],
+        '#required' => TRUE
+      );
+      $element['map_color'] = array(
+        '#title' => t('Map\'s color'),
+        '#type' => 'select',
+        '#options' => array(
+          'orange' => t('Orange'),
+          'blue' => t('Blue'),
+          'black' => t('Black'),
+          'brown' => t('Brown'),
+          'green' => t('Green'),
+          'purple' => t('Purple'),
+          'yellow' => t('Yellow'),
+          'gray' => t('Gray'),
+          'red' => t('Red'),
+          'white' => t('White')
+        ),
+        '#default_value' => $settings['map_color'],
+        '#required' => TRUE
+      );
+      break;
+    case 'image_caption':
+      $image_styles = image_style_options(FALSE);
+      $element['image_style'] = array(
+        '#title' => t('Image style'),
+        '#type' => 'select',
+        '#default_value' => $settings['image_style'],
+        '#empty_option' => t('None (original image)'),
+        '#options' => $image_styles,
+      );
+
+      $link_types = array(
+        'content' => t('Content'),
+        'file' => t('File'),
+      );
+      $element['image_link'] = array(
+        '#title' => t('Link image to'),
+        '#type' => 'select',
+        '#default_value' => $settings['image_link'],
+        '#empty_option' => t('Nothing'),
+        '#options' => $link_types,
+      );
+      break;
+    case 'text_wrapper':
+      $element['begin'] = array(
+        '#title' => t('Prefix'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['begin']
+      );
+      $element['end'] = array(
+        '#title' => t('Suffix'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['end']
+      );
+      $element['link'] = array(
+        '#title' => t('Link to node'),
+        '#type' => 'checkbox',
+        '#default_value' => $settings['link']
+      );
+      break;
+    case 'general_formatters_string_replacement':
+      $element['prefix_element'] = array(
+        '#title' => t('Prefix element'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['prefix_element']
+      );
+      $element['suffix_element'] = array(
+        '#title' => t('Suffix element'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['suffix_element']
+      );
+      $element['prefix_replacement'] = array(
+        '#title' => t('Prefix replacement'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['prefix_replacement']
+      );
+      $element['suffix_replacement'] = array(
+        '#title' => t('Suffix replacement'),
+        '#type' => 'textfield',
+        '#default_value' => $settings['suffix_replacement']
+      );
+      $element['element'] = array(
+        '#title' => t('Wrapper element'),
+        '#description' => t('Ex : h2, h3...'),
+        '#default_value' => $settings['element'],
+        '#type' => 'textfield'
+      );
+      break;
+    case 'general_formatters_advanced_link':
+      // Si le champ est une image, on affiche une liste des styles disponibles.
+      if ($field['type'] == 'image') {
+        $imageStyles = image_style_options(FALSE);
+        array_unshift($imageStyles, '<nothing> (Original image)');
+        $element['advanced_image_style'] = array(
+          '#title' => t('Image style'),
+          '#type' => 'select',
+          '#options' => $imageStyles
+        );
+      }
+      $element['default_link'] = array(
+        '#title' => t('Default link'),
+        '#type' => 'textfield'
+      );
+      $fieldOptions = array();
+      foreach($form['#fields'] as $field) {
+        $fieldInfo = field_info_instance($form['#entity_type'], $field, $instance['bundle']);
+        $fieldOptions[$field] = $fieldInfo['label'];
+      }
+      $element['field_link'] = array(
+        '#title' => t('Field link'),
+        '#type' => 'select',
+        '#options' => $fieldOptions
+      );
+      break;
+  }
+
+  return $element;
+
+} // ! hook_field_formatter_settings_form
+
+
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ *
+ *
+ */
+function general_formatters_field_formatter_settings_summary($field, $instance, $view_mode) {
+
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $summary = '';
+
+  switch($display['type']) {
+    case 'general_formatters_send_email':
+      $summary = t('Display : @value',array(
+        '@value' => $settings['display_text']
+      ));
+      break;
+    case 'general_formatters_static_map':
+      $summary = t('Use a @width x @height px static Google Maps with @zoom zoom level. Use a @type map with @color markers.', array(
+        '@width' => $settings['map_width'],
+        '@height' => $settings['map_height'],
+        '@zoom' => $settings['map_zoom'],
+        '@type' => $settings['map_type'],
+        '@color' => $settings['map_color'],
+
+      ));
+      break;
+
+    case 'image_caption':
+      $summary = array();
+
+      $image_styles = image_style_options(FALSE);
+      // Unset possible 'No defined styles' option.
+      unset($image_styles['']);
+      // Styles could be lost because of enabled/disabled modules that defines
+      // their styles in code.
+      if (isset($image_styles[$settings['image_style']])) {
+        $summary[] = t('Image style: @style', array('@style' => $image_styles[$settings['image_style']]));
+      }
+      else {
+        $summary[] = t('Original image');
+      }
+      $link_types = array(
+        'content' => t('Linked to content'),
+        'file' => t('Linked to file'),
+      );
+      // Display this setting only if image is linked.
+      if (isset($link_types[$settings['image_link']])) {
+        $summary[] = $link_types[$settings['image_link']];
+      }
+      return implode('<br />', $summary);
+      break;
+
+    // Affichage du chemin de l'image
+    case 'image_path':
+      $summary = t('Display image\'s path');
+      break;
+
+    // Wrapper pour un texte
+    case 'text_wrapper':
+      $begin = $settings['begin'] ? $settings['begin'] : t('Empty');
+      $end = $settings['end'] ? $settings['end'] : t('Empty');
+      $summary = t('Use these wrappers : @begin for prefix and @end for suffix', array(
+        '@begin' => $begin,
+        '@end' => $end
+      ));
+      if (isset($settings['link']) && $settings['link']) {
+        $summary .= '<br />'.t('Link to node');
+      }
+      break;
+
+    case 'general_formatters_string_replacement':
+      $els = array();
+      $els[] = isset($settings['prefix_element']) ? $settings['prefix_element'] : 'nothing';
+      $els[] = isset($settings['suffix_element']) ? $settings['suffix_element'] : 'nothing';
+      $frep = isset($settings['prefix_replacement']) ? $settings['prefix_replacement'] : 'nothing';
+      $srep = isset($settings['suffix_replacement']) ? $settings['suffix_replacement'] : 'nothing';
+      $summary = t('Elements to replace :') . join(',',$els).'<br />';
+      $summary .= t('Replacements : @frep , @srep', array('@frep' => $frep, '@srep' => $srep));
+      if (isset($settings['element'])) {
+        $summary .= t('Wrapper element : @element', array('@element' => $settings['element']));
+      }
+      break;
+
+    case 'general_formatters_advanced_link':
+      $summary = t('Link : @link',array('@link' => (($settings['field_link'])?$settings['field_link']:$settings['default_link'])));
+      if ($settings['advanced_image_style']) {
+        $summary .= '<br />'.t('Image style : @imageStyle', array('@imageStyle' => $settings['advanced_image_style']));
+      }
+      break;
+  }
+
+  return $summary;
+
+}
+
+
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * Implémentation du display des formatters
+ */
+function general_formatters_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+
+  $settings = $display['settings'];
+  $elements = array();
+  switch ($display['type']) {
+    case 'general_formatters_send_email':
+      foreach($items as $item) {
+        $elements[] = array(
+          '#markup' => theme('general_formatters_formatter_'.$display['type'], array('item' => $item, 'field' => $instance, 'settings' => $settings))
+        );
+      }
+      break;
+    case 'general_formatters_static_map':
+     $sampleStaticMapImage = 'http://maps.googleapis.com/maps/api/staticmap?center=@lat,@lon&zoom=@zoom'.
+     '&size=@widthx@height&markers=color:@color|label:A|@lat,@lon&sensor=false';
+
+      foreach($items as $item) {
+        $replace = array(
+          '@lat' => $item['lat'],
+          '@lon' => $item['lon'],
+          '@zoom' => $settings['map_zoom'],
+          '@width' => $settings['map_width'],
+          '@height' => $settings['map_height'],
+          '@color' => $settings['map_color'],
+          '@type' => $settings['map_type']
+        );
+        $imageUrl = str_replace(array_keys($replace),array_values($replace),$sampleStaticMapImage);
+        $elements[] = array(
+          '#markup' => theme(
+            'image',
+            array(
+              'path' => $imageUrl,
+              'attributes' =>
+                array(
+                  'class' => array('static-map'),
+                  'item-prop' => 'photo'
+                )
+            )
+          )
+        );
+      }
+      break;
+    case 'image_caption':
+      // Check if the formatter involves a link.
+      if ($display['settings']['image_link'] == 'content') {
+        $uri = entity_uri($entity_type, $entity);
+      }
+      elseif ($display['settings']['image_link'] == 'file') {
+        $link_file = TRUE;
+      }
+
+      foreach ($items as $delta => $item) {
+        if (isset($link_file)) {
+          $uri = array(
+            'path' => file_create_url($item['uri']),
+            'options' => array(),
+          );
+        }
+        $elements[$delta] = array(
+          '#theme' => 'general_formatters_image_caption',
+          '#item' => $item,
+          '#image_style' => $display['settings']['image_style'],
+          '#path' => isset($uri) ? $uri : '',
+        );
+      }
+      break;
+    case 'image_path':
+      foreach($items as $delta => $item) {
+        $url = file_create_url($item['uri']);
+        $elements[$delta] = array(
+          '#type' => 'markup',
+          '#markup' => $url
+        );
+      }
+      break;
+    case 'text_wrapper':
+      foreach($items as $delta => $item) {
+        $value = $item['value'];
+        if (isset($settings['link']) && $settings['link']) {
+          $value = l($value,drupal_lookup_path('alias','user/'.$entity->uid),array('attributes' => array('class' => array('wrapped-text-link'))));
+        }
+        $elements[$delta] = array(
+          '#type' => 'markup',
+          '#markup' => $settings['begin'].$value.$settings['end']
+        );
+      }
+      break;
+    case 'general_formatters_string_replacement':
+      $els = array();
+      $els[] = isset($settings['prefix_element']) ? $settings['prefix_element'] : NULL;
+      $els[] = isset($settings['suffix_element']) ? $settings['suffix_element'] : NULL;
+      $sub = array();
+      $sub[] = isset($settings['prefix_replacement']) ? $settings['prefix_replacement'] : NULL;
+      $sub[] = isset($settings['suffix_replacement']) ? $settings['suffix_replacement'] : NULL;
+      foreach($items as $delta => $item) {
+        $value = str_replace($els,$sub,$item['value']);
+        if (isset($settings['element']) && $settings['element']) {
+          $el = $settings['element'];
+          $value = "<$el>".$value."</$el>";
+        }
+        $elements[$delta] = array(
+          '#type' => 'markup',
+          '#markup' => $value
+        );
+      }
+      break;
+
+    case 'general_formatters_advanced_link':
+      if ($settings['field_link']) {
+        $linkArray = field_get_items($entity_type,$entity,$settings['field_link']);
+        $link = $linkArray[0]['value'];
+      }
+      else {
+        $link = isset($settings['default_link']) ? array(array($settings['default_link'])) : '#';
+      }
+      $type = $field['type'];
+      switch($type) {
+        case 'text':
+          foreach($items as $delta => $item) {
+            $elements[$delta] = array(
+              '#type' => 'markup',
+              '#markup' => l($item['value'],$link, array('attributes' => array('class' => array('advanced-link'))))
+            );
+          }
+          break;
+        case 'image':
+          foreach($items as $delta => $item) {
+            $imageUrl = file_create_url($item['uri']);
+
+            if ($settings['advanced_image_style']) {
+              $image = theme('image_style',
+                array(
+                  'style_name' => $settings['advanced_image_style'],
+                  'path' => $item['uri'],
+                  'attributes' => array('class' => array('advanced-link-styled-image'))));
+            }
+            else {
+              $image = theme('image',
+                array(
+                  'path' => $item['uri'],
+                  'attributes' => array('class' => array('advanced-link-image'))
+                ));
+            }
+            $elements[$delta] = array(
+              '#type' => 'markup',
+              '#markup' => l($image,$link,array('html' => TRUE, 'attributes' => array('class' => array('advanced-link'))))
+            );
+          }
+          break;
+      }
+      break;
+  }
+  return $elements;
+
+} // !general_formatters_field_formatter_view
