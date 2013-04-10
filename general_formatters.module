@@ -455,7 +455,7 @@ function general_formatters_field_formatter_view($entity_type, $entity, $field, 
     case 'general_formatters_advanced_link':
       if ($settings['field_link']) {
         $linkArray = field_get_items($entity_type,$entity,$settings['field_link']);
-        $link = $linkArray[0]['value'];
+        $link = (!empty($linkArray[0]['url'])) ? $linkArray[0]['url'] : $linkArray[0]['value'];
       }
       else {
         $link = isset($settings['default_link']) ? array(array($settings['default_link'])) : '#';
